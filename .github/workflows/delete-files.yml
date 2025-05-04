@@ -1,0 +1,36 @@
+name: Cleanup Old Reports and Summaries
+
+on:
+  schedule:
+    - cron: "0 2 * * *"  # Todos los días a las 02:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Clean reports/ to keep max 10
+        run: |
+          mkdir -p reports
+          ls -1t reports/nmap_report_*.txt | tail -n +11 | xargs -r git rm
+
+      - name: Clean summaries/ to keep max 10
+        run: |
+          mkdir -p summaries
+          ls -1t summaries/summary_*.md | tail -n +11 | xargs -r git rm
+
+      - name: Commit and push cleanup
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git diff --cached --quiet || git commit -m "Cleanup old reports and summaries"
+          git push
