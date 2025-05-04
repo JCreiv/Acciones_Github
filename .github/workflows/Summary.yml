@@ -2,6 +2,9 @@ name: Generate Scan Summary
 
 on:
   workflow_dispatch:
+  
+permissions:
+  contents: write
 
 jobs:
   summary:
