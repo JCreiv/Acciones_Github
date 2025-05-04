@@ -52,6 +52,4 @@ jobs:
           git diff --cached --quiet || git commit -m "Update Nmap reports $(date +'%Y-%m-%d %H:%M:%S')"
           
           git push
-          
-# Activación manual forzada
 
