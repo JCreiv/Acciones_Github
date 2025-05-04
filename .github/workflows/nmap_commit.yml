@@ -1,0 +1,55 @@
+name: Nmap Scan and Commit Report
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Diariamente a medianoche UTC
+  workflow_dispatch:
+
+jobs:
+  nmap_scan_and_commit:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # Necesario para push al repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Nmap
+        run: sudo apt-get update && sudo apt-get install -y nmap
+
+      - name: Run Nmap scan
+        run: nmap scanme.nmap.org -sV -oN nmap_report.txt
+
+      - name: Prepare reports directory
+        run: mkdir -p reports
+
+      - name: Move report with timestamp
+        run: |
+          TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+          mv nmap_report.txt "reports/nmap_report_${TIMESTAMP}.txt"
+
+      - name: Clean old reports (older than 7 days)
+        run: |
+          find reports/ -type f -name "nmap_report_*.txt" -mtime +7 -exec git rm {} \; || true
+
+      - name: Update reports index
+        run: |
+          ls -1 reports/nmap_report_*.txt | sort -r > reports/index.txt
+          git add reports/index.txt
+
+      - name: Commit and push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          git add reports/
+          
+          # Solo hace commit si hay cambios
+          git diff --cached --quiet || git commit -m "Update Nmap reports $(date +'%Y-%m-%d %H:%M:%S')"
+          
+          git push
+
